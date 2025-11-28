@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전남 청년 인구 비상 신호</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;500;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            /* 배경색 */
+            --card-bg: #ffffff;
+            /* 카드 배경 */
+            --text-main: #0f172a;
+            /* 메인 텍스트 */
+            --text-sub: #64748b;
+            /* 서브 텍스트 */
+            --accent-red: #dc2626;
+            /* 강조: 위험 (빨강) */
+            --accent-yellow: #d97706;
+            /* 강조: 주의 (오렌지) */
+            --accent-green: #16a34a;
+            /* 강조: 안정 (초록) */
+            --chart-gray: #94a3b8;
+            /* 그래프용 회색 */
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        /* 스크롤 애니메이션 효과 */
+        .section {
+            padding: 60px 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .highlight {
+            color: var(--accent-red);
+            font-weight: 800;
+        }
+
+        /* --- 1. 헤더 영역 --- */
+        header {
+            padding: 100px 0 60px;
+            text-align: center;
+            background: linear-gradient(180deg, #fff 0%, var(--bg-color) 100%);
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: #fee2e2;
+            color: var(--accent-red);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+
+        .ticker-container {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-bottom: 40px;
+        }
+
+        .ticker-item {
+            text-align: center;
+        }
+
+        .ticker-number {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--accent-red);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+        }
+
+        .ticker-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-top: 15px;
+        }
+
+        .ticker-sub {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-top: 5px;
+        }
+
+        .hero-title {
+            font-size: 2.8rem;
+            line-height: 1.3;
+            margin-bottom: 20px;
+            word-break: keep-all;
+        }
+
+        /* Dust Effect Text Style */
+        .dust-text {
+            position: relative;
+            display: inline-block;
+            /* 살짝 흐릿하게 */
+            opacity: 0.85;
+            filter: blur(0.5px);
+        }
+
+        /* --- 카드 및 차트 --- */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+            padding-right: 20px;
+        }
+
+        /* --- 지역별 그리드 --- */
+        .district-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
+            margin-top: 30px;
+        }
+
+        .d-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px 10px;
+            text-align: center;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: default;
+        }
+
+        .d-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .d-stat {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: 8px 0;
+        }
+
+        .d-name {
+            font-weight: bold;
+            color: #334155;
+        }
+
+        /* 위험도 색상: 20% 미만(빨강), 20% 이상(노랑) */
+        .risk-high {
+            border-bottom: 4px solid var(--accent-red);
+        }
+
+        .risk-high .d-stat {
+            color: var(--accent-red);
+        }
+
+        .risk-mid {
+            border-bottom: 4px solid var(--accent-yellow);
+        }
+
+        .risk-mid .d-stat {
+            color: var(--accent-yellow);
+        }
+
+        /* --- 엔딩 섹션 --- */
+        .outro-container {
+            text-align: center;
+            padding: 80px 20px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .outro-text {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 30px;
+        }
+
+        /* 진한 형광펜 효과 */
+        .highlight-bg {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0) 50%, #fde047 50%);
+            padding: 0 5px;
+            box-shadow: inset 0 -5px 0 0 #facc15;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* 모바일 대응 */
+        @media (max-width: 768px) {
+            .ticker-container {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .ticker-number {
+                font-size: 3.5rem;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .chart-wrapper {
+                height: 350px;
+            }
+        }
+
+        /* --- 추가된 애니메이션 및 디자인 --- */
+        /* 1. 스크롤 하이라이트 애니메이션 */
+        .scroll-highlight {
+            position: relative;
+            z-index: 0;
+            display: inline-block;
+            color: var(--accent-red);
+            /* 빨간 글씨 */
+            font-weight: 800;
+        }
+
+        .scroll-highlight::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0%;
+            height: 40%;
+            /* 글자 하단 40%만 칠하기 */
+            background-color: rgba(220, 38, 38, 0.2);
+            /* 약한 빨간색 형광펜 */
+            z-index: -1;
+            transition: width 1.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        /* 섹션이 보일 때 하이라이트 확장 */
+        .section.visible .scroll-highlight::after {
+            width: 100%;
+        }
+
+        /* --- Outro Section Upgrade --- */
+        .outro-card {
+            background: white;
+            border-radius: 24px;
+            padding: 80px 40px;
+            text-align: center;
+            box-shadow: 0 20px 50px -12px rgba(220, 38, 38, 0.15);
+            border: 1px solid rgba(220, 38, 38, 0.1);
+            position: relative;
+            overflow: hidden;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .outro-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+            opacity: 0.6;
+        }
+
+        .outro-title {
+            font-size: 2.6rem;
+            font-weight: 800;
+            margin-bottom: 24px;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
+            line-height: 1.3;
+        }
+
+        .golden-time {
+            color: var(--accent-red);
+            position: relative;
+            display: inline-block;
+            font-weight: 900;
+            z-index: 1;
+        }
+
+        .golden-time::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: -4px;
+            right: -4px;
+            height: 12px;
+            background: rgba(220, 38, 38, 0.15);
+            z-index: -1;
+            transform: skewX(-10deg);
+            border-radius: 2px;
+        }
+
+        .cta-button {
+            margin-top: 40px;
+            padding: 18px 48px;
+            background: var(--text-main);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.4);
+            background: #1e293b;
+        }
+
+        .cta-button:hover i {
+            transform: rotate(180deg);
+        }
+
+        /* --- Siren Warning Effect --- */
+        @keyframes siren-flash {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+                border-color: rgba(220, 38, 38, 0.4);
+                background-color: rgba(220, 38, 38, 0.05);
+            }
+
+            50% {
+                box-shadow: 0 0 20px 10px rgba(220, 38, 38, 0.2);
+                border-color: rgba(220, 38, 38, 1);
+                background-color: rgba(220, 38, 38, 0.15);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+                border-color: rgba(220, 38, 38, 0.4);
+                background-color: rgba(220, 38, 38, 0.05);
+            }
+        }
+
+        .warning-siren {
+            animation: siren-flash 2s infinite ease-in-out;
+            border: 2px solid var(--accent-red);
+            /* 기본 테두리 (애니메이션 실패 시 대비) */
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container">
+            <div class="hero-badge">전라남도 청년 인구 위기</div>
+
+            <div class="ticker-container">
+                <div class="ticker-item">
+                    <div class="ticker-number" data-target="-6611">0</div>
+                    <div class="ticker-label">2024 청년 순이동 (명)</div>
+                    <div class="ticker-sub">유입보다 유출이 많은 상태</div>
+                </div>
+                <div class="ticker-item">
+                    <div class="ticker-number" data-target="-1.9" data-is-percent="true">0.0%</div>
+                    <div class="ticker-label">청년 순이동률 (%)</div>
+                    <div class="ticker-sub">전국 시도 중 최하위권</div>
+                </div>
+            </div>
+
+            <h1 class="hero-title">청년이 <span class="dust-text">사라지는 전남</span>,<br>미래도 함께 <span class="dust-text">사라지고
+                    있습니다</span></h1>
+            <p style="color:var(--text-sub); font-size:1.1rem; max-width:700px; margin:0 auto; word-break: keep-all;">
+                전남 청년 인구 유출 데이터를 시각화하여, 지역 소멸 위기가 얼마나 가까이 와 있는지<br>누구나 한눈에 볼 수 있도록 정리했습니다.
+            </p>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <div class="section">
+            <div class="card">
+                <h2>1. 소멸의 최전선: 2024 지방소멸위험지수</h2>
+                <p style="color:var(--text-sub);">지수가 0.5 미만이면 소멸 위험 단계입니다. <span class="scroll-highlight">전남은 0.329로 전국
+                        1위 위험 지역입니다.</span></p>
+                <div class="chart-wrapper">
+                    <canvas id="extinctionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="card">
+                <h2>2. 떠나는 청년들: 순이동 흐름</h2>
+                <p style="color:var(--text-sub);">청년들이 수도권으로 쏠리는 동안, <span class="scroll-highlight">전남의 인구 유출은 심화되고
+                        있습니다.</span></p>
+                <div class="chart-wrapper">
+                    <canvas id="migrationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+
+                <div class="card" style="flex: 1.5; min-width: 300px;">
+                    <h2>3. 인구 절벽</h2>
+                    <p style="color:var(--text-sub); margin-bottom:10px;">
+                        0세부터 100세까지의 인구 분포입니다.<br>
+                        <span style="color:var(--accent-red); font-weight:bold;">청년 세대(18~39세)</span>의 인구분포를 기성 세대의
+                        인구분포와 비교했을때<br>보이는 <span class="scroll-highlight">급격한 인구절벽</span>을 확인해보세요
+                    </p>
+                    <div class="chart-wrapper">
+                        <canvas id="ageCliffChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card" style="flex: 1; min-width: 300px;">
+                    <h2>4. 그들이 떠나는 이유</h2>
+                    <p style="color:var(--text-sub);"><span class="scroll-highlight">직업(일자리) 문제가 압도적 1위입니다.</span></p>
+                    <div class="chart-wrapper">
+                        <canvas id="reasonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="card warning-siren">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-exclamation-triangle" style="color:var(--accent-red); font-size:1.5rem;"></i>
+                    <h2 style="color:var(--accent-red);">5. 경고: 2050년의 미래 (시뮬레이션)</h2>
+                </div>
+                <p style="color:var(--text-sub); margin-top:5px;">
+                    이대로라면 2050년 전남 청년 인구는 <span class="highlight">현재의 절반(-53%)</span>으로 줄어듭니다.
+                </p>
+                <div class="chart-wrapper">
+                    <canvas id="projectionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>전라남도 22개 시·군의 청년 인구 현황</h2>
+            <p style="color:var(--text-sub); margin-bottom: 20px;">
+                각 시·군의 전체 인구 대비 청년 인구의 (18-39세) 비율을 나타내보았습니다<br>
+                <span style="color:var(--accent-red)">■ 20% 미만 (심각)</span>
+                <span style="color:var(--accent-yellow)">■ 20% 이상 (주의)</span>
+            </p>
+            <div class="district-grid" id="districtGrid"></div>
+        </div>
+
+        <div class="section visible">
+            <div class="outro-card">
+                <h1 class="outro-title">
+                    이것은 단순한 <span class="highlight-bg">숫자</span>가 아닙니다.
+                </h1>
+                <p style="font-size: 1.25rem; color: #64748b; margin-bottom: 50px; line-height: 1.8;">
+                    청년이 머물 수 있는 전남을 만들기 위해선,<br>
+                    <strong style="color:var(--text-main)"><span class="scroll-highlight">데이터에 기반한 공감과 실질적인
+                            행동이
+                            필요합니다.</span></strong>
+                </p>
+                <h2 style="font-size: 2.2rem; color: var(--text-main); margin-bottom: 10px;">
+                    지금이 바로 <span class="golden-time">골든타임</span>입니다.
+                </h2>
+
+                <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="cta-button">
+                    <span>다시 처음부터 보기</span>
+                    <i class="fas fa-redo-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="section"
+            style="text-align: center; color: var(--text-sub); padding: 40px 0; border-top: 1px solid #e2e8f0; margin-top: 20px;">
+            <p style="font-size: 0.9rem;">
+                출처: kosis (국가통계포털), 행정안전부 통계, 호남지방통계청의 데이터를 이용해 만든 자료입니다.
+            </p>
+            <p style="font-weight: 700; margin-top: 10px;">국립 순천대학교 지역현안 문제해결 프로그램 벽력일섬 팀 제작</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 플러그인 등록 ---
+        Chart.register(ChartDataLabels);
+
+        // --- 1. 숫자 카운팅 (Ticker) ---
+        const tickers = document.querySelectorAll('.ticker-number');
+        tickers.forEach(counter => {
+            const target = +counter.getAttribute('data-target');
+            const isPercent = counter.getAttribute('data-is-percent') === 'true';
+            const duration = 2000;
+            const frameRate = 10;
+            const totalFrames = duration / frameRate;
+            let currentFrame = 0;
+
+            const updateCount = () => {
+                currentFrame++;
+                const progress = currentFrame / totalFrames;
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const currentVal = target * easeOut;
+
+                if (currentFrame < totalFrames) {
+                    if (isPercent) counter.innerText = currentVal.toFixed(1) + "%";
+                    else counter.innerText = Math.floor(currentVal).toLocaleString();
+                    setTimeout(updateCount, frameRate);
+                } else {
+                    if (isPercent) counter.innerText = target.toFixed(1) + "%";
+                    else counter.innerText = target.toLocaleString();
+                }
+            };
+            updateCount();
+        });
+
+        // --- 2. 차트 공통 설정 ---
+        Chart.defaults.font.family = 'Pretendard';
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.set('plugins.datalabels', {
+            color: '#333',
+            font: { weight: 'bold', size: 11 },
+            display: true
+        });
+
+        // (A) 소멸위험지수 (세로 막대)
+        new Chart(document.getElementById('extinctionChart'), {
+            type: 'bar',
+            data: {
+                labels: ['세종(안정)', '서울(주의)', '전국평균', '전북(위험)', '경북(위험)', '전남(고위험)'],
+                datasets: [{
+                    label: '지방소멸위험지수',
+                    data: [1.113, 0.810, 0.615, 0.394, 0.346, 0.329],
+                    backgroundColor: ['#16a34a', '#eab308', '#94a3b8', '#f97316', '#f97316', '#dc2626'],
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 25 } },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { anchor: 'end', align: 'end', formatter: (val) => val.toFixed(3) }
+                },
+                scales: {
+                    x: { grid: { display: false }, title: { display: true, text: '주요 지역', align: 'end' } },
+                    y: { grid: { color: '#f1f5f9' }, min: 0, max: 1.3, title: { display: true, text: '위험지수 (0.5 미만 시 위험)', align: 'end' } }
+                }
+            }
+        });
+
+        // (B) 순이동 차트
+        new Chart(document.getElementById('migrationChart'), {
+            type: 'bar',
+            data: {
+                labels: ['경기', '인천', '세종', '충남', '서울', '경남', '경북', '전북', '전남'],
+                datasets: [{
+                    label: '순이동률 (%)',
+                    data: [0.9, 1.4, 1.7, 0.6, 0.5, -1.8, -1.8, -2.1, -1.9],
+                    backgroundColor: c => c.raw < 0 ? '#dc2626' : '#2563eb',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { right: 30 } },
+                plugins: {
+                    legend: false,
+                    datalabels: {
+                        anchor: c => c.dataset.data[c.dataIndex] < 0 ? 'start' : 'end',
+                        align: c => c.dataset.data[c.dataIndex] < 0 ? 'start' : 'end',
+                        formatter: (val) => val + "%",
+                        color: c => c.dataset.data[c.dataIndex] < 0 ? '#dc2626' : '#2563eb'
+                    }
+                },
+                scales: {
+                    x: { grid: { color: '#f1f5f9' }, title: { display: true, text: '순이동률 (%)', align: 'end' }, suggestedMin: -3, suggestedMax: 3 },
+                    y: { grid: { display: false }, ticks: { color: '#0f172a', font: { weight: 'bold' } }, title: { display: true, text: '시·도', align: 'end' } }
+                }
+            }
+        });
+
+        // (C) 인구 절벽 (시뮬레이션 데이터 + 색상 로직: 18~39세 빨강, 나머지 회색)
+        const popDataFull = [13505, 13436, 13356, 14228, 14271, 13810, 14151, 13884, 13861, 13964, 13829, 13801, 13393, 13964, 13488, 13952, 14137, 14187, 15593, 14897, 16306, 16818, 16517, 17950, 19966, 19285, 19710, 20412, 20720, 21329, 20717, 20566, 20550, 19649, 18219, 17901, 17727, 18063, 18582, 19666, 25019, 26496, 26745, 26026, 26931, 27335, 26311, 26902, 27635, 27437, 26876, 27331, 27357, 27610, 27966, 27871, 29009, 27906, 29439, 28073, 29537, 29219, 29454, 27998, 29099, 27866, 28188, 26498, 25445, 26372, 24546, 22998, 22140, 21837, 21627, 20273, 19638, 19148, 18207, 17223, 17017, 14363, 12860, 11509, 10711, 9950, 8590, 9275, 7453, 6829, 7018, 5477, 4074, 5508, 4692, 3942, 3410, 2624, 2923, 2317, 1518];
+        const labelsFull = Array.from({ length: 101 }, (_, i) => i);
+
+        const bgColors = labelsFull.map(age => {
+            if (age >= 18 && age <= 39) return '#dc2626'; // 청년
+            return '#94a3b8'; // 그 외
+        });
+
+        new Chart(document.getElementById('ageCliffChart'), {
+            type: 'bar',
+            data: {
+                labels: labelsFull,
+                datasets: [{
+                    label: '인구수',
+                    data: popDataFull,
+                    backgroundColor: bgColors,
+                    borderRadius: 1,
+                    barPercentage: 1.0,
+                    categoryPercentage: 1.0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: false,
+                    datalabels: { display: false },
+                    tooltip: { callbacks: { title: (c) => c[0].label + "세", label: (c) => c.formattedValue + "명" } }
+                },
+                scales: {
+                    x: {
+                        display: true, grid: { display: false },
+                        ticks: { stepSize: 10, maxTicksLimit: 11 },
+                        title: { display: true, text: '연령 (0세 ~ 100세)', align: 'end' }
+                    },
+                    y: {
+                        grid: { color: '#f1f5f9' },
+                        title: { display: true, text: '인구수 (명)', align: 'end' }
+                    }
+                }
+            }
+        });
+
+        // (D) 이유 차트
+        new Chart(document.getElementById('reasonChart'), {
+            type: 'doughnut',
+            data: { labels: ['직업 (일자리)', '교육', '기타'], datasets: [{ data: [65, 15, 20], backgroundColor: ['#dc2626', '#d97706', '#94a3b8'], borderWidth: 0 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
+                    datalabels: {
+                        color: '#fff', font: { weight: 'bold', size: 14 },
+                        formatter: (value, ctx) => {
+                            let sum = 0; ctx.chart.data.datasets[0].data.map(d => sum += d);
+                            return (value * 100 / sum).toFixed(1) + "%";
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+
+        // (E) 2050 예측 차트
+        new Chart(document.getElementById('projectionChart'), {
+            type: 'line',
+            data: {
+                labels: ['2022년', '2030년', '2040년', '2050년'],
+                datasets: [{
+                    label: '청년 인구 예측(명)',
+                    data: [284000, 221000, 165000, 132000],
+                    borderColor: '#dc2626',
+                    backgroundColor: 'rgba(220, 38, 38, 0.05)',
+                    borderDash: [5, 5],
+                    borderWidth: 3,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#dc2626',
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, layout: { padding: { top: 30, right: 30 } },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { align: 'top', font: { size: 12 }, formatter: (val) => val.toLocaleString() + "명" }
+                },
+                scales: {
+                    x: { grid: { display: false }, title: { display: true, text: '연도', align: 'end' } },
+                    y: { beginAtZero: true, suggestedMax: 350000, grid: { color: '#f1f5f9' }, ticks: { padding: 20 }, title: { display: true, text: '청년 인구수 (명)', align: 'end' } }
+                }
+            }
+        });
+
+        // --- 3. 지역별 그리드 (색상 로직: 20% 미만 빨강, 이상 노랑) ---
+        const districts = [
+            { name: "목포시", youth: 51141, total: 213254 }, { name: "여수시", youth: 66080, total: 273741 }, { name: "순천시", youth: 71496, total: 278123 }, { name: "나주시", youth: 30325, total: 120566 }, { name: "광양시", youth: 40927, total: 156076 }, { name: "담양군", youth: 8278, total: 47121 }, { name: "곡성군", youth: 4216, total: 27536 }, { name: "구례군", youth: 3244, total: 25646 }, { name: "고흥군", youth: 8735, total: 62506 }, { name: "보성군", youth: 5474, total: 38155 }, { name: "화순군", youth: 12273, total: 62794 }, { name: "장흥군", youth: 5602, total: 35215 }, { name: "강진군", youth: 5247, total: 34417 }, { name: "해남군", youth: 11184, total: 65377 }, { name: "영암군", youth: 16174, total: 61064 }, { name: "무안군", youth: 23441, total: 94769 }, { name: "함평군", youth: 5018, total: 31189 }, { name: "영광군", youth: 10690, total: 53304 }, { name: "장성군", youth: 7983, total: 43240 }, { name: "완도군", youth: 10774, total: 50508 }, { name: "진도군", youth: 6496, total: 31398 }, { name: "신안군", youth: 6345, total: 40009 }
+        ];
+        districts.forEach(d => d.ratio = ((d.youth / d.total) * 100).toFixed(1));
+        districts.sort((a, b) => a.ratio - b.ratio);
+
+        const gridContainer = document.getElementById('districtGrid');
+        districts.forEach(d => {
+            let riskClass = d.ratio < 20 ? 'risk-high' : 'risk-mid';
+            gridContainer.innerHTML += `<div class="d-card ${riskClass}"><div class="d-name">${d.name}</div><div class="d-stat">${d.ratio}%</div></div>`;
+        });
+
+        // --- 4. 스크롤 애니메이션 관찰자 ---
+        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); }); }, { threshold: 0.1 });
+        document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+        // --- 5. Dust Effect (가루가 되어 사라지는 효과) ---
+        window.addEventListener('load', () => {
+            // 폰트 로딩 대기 후 실행
+            document.fonts.ready.then(() => {
+                initDustEffect();
+            });
+        });
+
+        function initDustEffect() {
+            const targets = document.querySelectorAll('.dust-text');
+
+            targets.forEach(target => {
+                // html2canvas로 텍스트를 캡처하여 픽셀 데이터 확보
+                html2canvas(target, { backgroundColor: null }).then(canvas => {
+                    const ctx = canvas.getContext('2d');
+                    const { width, height } = canvas;
+
+                    // 픽셀 데이터 가져오기
+                    const imageData = ctx.getImageData(0, 0, width, height);
+                    const data = imageData.data;
+
+                    // 유효한 픽셀(글자 부분) 좌표 저장
+                    const pixels = [];
+                    for (let y = 0; y < height; y += 2) { // 성능을 위해 2픽셀 단위로 스킵
+                        for (let x = 0; x < width; x += 2) {
+                            const index = (y * width + x) * 4;
+                            if (data[index + 3] > 128) { // 알파값이 충분한 픽셀만
+                                pixels.push({
+                                    x: x,
+                                    y: y,
+                                    color: `rgba(${data[index]}, ${data[index + 1]}, ${data[index + 2]}, ${data[index + 3] / 255})`
+                                });
+                            }
+                        }
+                    }
+
+                    // 오버레이 캔버스 생성
+                    const overlay = document.createElement('canvas');
+                    overlay.width = width + 200; // 가루가 날아갈 공간 확보 (오른쪽으로)
+                    overlay.height = height + 100; // 위아래 여유
+                    overlay.style.position = 'absolute';
+                    overlay.style.top = '-50px';
+                    overlay.style.left = '0';
+                    overlay.style.pointerEvents = 'none';
+                    overlay.style.zIndex = '10';
+                    target.appendChild(overlay);
+
+                    const oCtx = overlay.getContext('2d');
+                    const particles = [];
+
+                    // 파티클 생성 및 애니메이션 루프
+                    function animate() {
+                        oCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+                        // 매 프레임마다 새로운 파티클 생성 (지속적인 가루 날림)
+                        // 텍스트 크기에 비례하여 생성량 조절
+                        const spawnCount = 5;
+                        for (let i = 0; i < spawnCount; i++) {
+                            if (pixels.length === 0) break;
+                            const p = pixels[Math.floor(Math.random() * pixels.length)];
+                            particles.push({
+                                x: p.x, // 캔버스 기준 좌표 (오버레이는 top -50이므로 y 보정 필요)
+                                y: p.y + 50, // 오버레이 y 오프셋 보정
+                                vx: (Math.random() * 1.5) + 0.5, // 오른쪽으로 바람
+                                vy: (Math.random() - 0.5) * 0.5, // 위아래 살짝 흔들림
+                                life: 1.0,
+                                color: p.color,
+                                size: Math.random() * 2 + 1
+                            });
+                        }
+
+                        // 파티클 업데이트 및 그리기
+                        for (let i = particles.length - 1; i >= 0; i--) {
+                            const p = particles[i];
+
+                            p.x += p.vx;
+                            p.y += p.vy;
+                            p.vx += 0.01; // 바람 가속도
+                            p.life -= 0.01; // 수명 감소
+
+                            if (p.life <= 0) {
+                                particles.splice(i, 1);
+                            } else {
+                                oCtx.globalAlpha = p.life;
+                                oCtx.fillStyle = p.color;
+                                oCtx.beginPath();
+                                oCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                                oCtx.fill();
+                            }
+                        }
+
+                        requestAnimationFrame(animate);
+                    }
+
+                    animate();
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>
